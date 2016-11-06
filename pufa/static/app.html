@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <!-- <link href="https://s3.amazonaws.com/codiqa-cdn/codiqa.ext.css" rel="stylesheet"> -->
+  <!-- <link href="https://s3.amazonaws.com/codiqa-cdn/mobile/1.4.2/jquery.mobile-1.4.2.css" rel="stylesheet"> -->
+  <!-- repalcement -->
+  <link href="//cdn.bootcss.com/jquery-mobile/1.4.2/jquery.mobile.css" rel="stylesheet">
+
+  <!-- <link rel="stylesheet" type="text/css" href="style.css"> -->
+
+  <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script> -->
+  <!-- <script src="https://s3.amazonaws.com/codiqa-cdn/mobile/1.4.2/jquery.mobile-1.4.2.min.js"></script> -->
+  <!-- <script src="https://s3.amazonaws.com/codiqa-cdn/codiqa.ext.js"></script> -->
+  <!-- replacement -->
+  <script src="//cdn.bootcss.com/jquery/1.8.3/jquery.min.js"></script>
+  <script src="//cdn.bootcss.com/jquery-mobile/1.4.2/jquery.mobile.js"></script>
+
+  <script type="text/javascript">
+        $(document).ready(function(){
+        	alert("document ready");
+            $.get("http://localhost:12345/get_questions", function(data, status){
+            	alert(status);
+//            	var question_json_array= JSON.parse(data).results;
+            	var question_json_array= data.results;
+                if (status == "success") {
+                    alert(data.results[1]['title']);
+                    alert("the data of questions is download");
+
+                    //将问题数据加载到页面中
+                    for (var i = 0; i < question_json_array.length; i++){
+                        var question = question_json_array[i];
+                        $("#title"+(i+1)).text(question.title);
+                        var label_ls = $("#set"+(i+1)+">label");
+                        for (var j = 0; j<label_ls.length; j++){
+                            $("#label"+(i+1)+(j+1)).text(question[''+(j+1)]);
+                        }
+                    }
+
+                    $("#start").click(function(){
+                        var name = $("#name").attr("value");
+                        var phone_num = $("#phone_num").attr("value");
+                        if (name == null || name =="" 
+                            || phone_num == null || phone_num =="" ) {
+                            alert("请输入完整信息");
+                        } else {
+                            // alert("Name is:" +name + "\nphone_num is:"+phone_num)
+                            $.mobile.changePage("#page0");
+                        }
+                    });
+                    $("#next5").click(function(){
+                    	// alert("答完");
+                    	// alert("开始检查");
+                        //读取现有的选择结果
+                    	var choices = [];
+                    	for (var i = 1; i < 6; i++) {
+                    		// alert("开始循环检查");
+                    		var flag = false;
+                    		var ls = $("input[name='choice"+i+"']");
+                    		for (var j = 0; j < ls.length; j++) {
+                    			if (ls[j].checked) {
+                    				flag = true;
+                    				choices.push(ls[j].value);
+                    				break
+                    			}else{
+                    				flag = false;
+                    			}
+                    		}
+                    		if (!flag) {
+                    			alert("您有未做出选择的题目"); 
+                    			return //注意这里的return，存在没有答完的题目的时候，不进行验证请求操作
+                    		}
+                    		
+                    	}
+                    	alert(choices.join(''));
+                    	var choices_json_data = {};
+                    	for (var i = 0; i < question_json_array.length; i++) {
+                    		choices_json_data[question_json_array[i]["id"]] = choices[i];
+                    	}
+                        alert(JSON.stringify(choices_json_data));
+                        $.get("http://localhost:12345/verify_choices?phone_num="+$("#phone_num").attr("value")+"&name="+$("#name").attr("value")+"&choices="+JSON.stringify(choices_json_data)
+                        	,function(data, status){
+                        		alert("get执行成功 开始回调");
+	                            if (status == "success" && data.error != "yes") {
+	                            	alert("成功提交数据");
+	                            	$.mobile.changePage("#page11");
+	                            	$("#result").text(data.correct_num);
+//                                    if (JSON.parse(data.correct_num) >= 4){
+//                                        $("#words").style("visibility", "visible");
+//                                    }
+	                            } else {
+	                                alert("请求失败，请重新答题");
+                            }
+                        });
+                    });
+                } else {
+                    alert("请求失败，请刷新页面");
+                }
+            });
+        });
+  </script>
+
+</head>
+<body>
+<div data-role="page" data-control-title="Home" id="page00">
+    <div data-theme="a" data-role="header">
+        <h1 class="ui-title">
+            预留信息
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <form action="" method="GET" >
+            <div class="ui-field-contain" data-controltype="textinput">
+                <label for="name">
+                    姓名
+                </label>
+                <input name="" id="name" placeholder="" value="" type="text">
+            </div>
+            <div class="ui-field-contain" data-controltype="textinput">
+                <label for="phone_num">
+                    手机
+                </label>
+                <input name="" id="phone_num" placeholder="" value="" type="text">
+            </div>
+        </form>
+        <a id="start" href="" class="ui-btn ">
+            进入
+        </a>
+    </div>
+</div>
+<!-- <div data-role="page" data-dialog="true" id="promptpage">
+    <div data-theme="a" data-role="header">
+        <h1 class="ui-title">
+            提示
+        </h1>
+    </div>
+    <div data-role="main" class="ui-content">
+        请填写相应的信息
+    </div>
+    <div data-role="footer">
+        
+    </div>
+</div> -->
+<div data-role="page" data-control-title="Home" id="page0">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            我学法  我受益
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <!-- <div style="width: 288px; height: 200px; position: relative; background-color: #fbfbfb; border: 1px solid #b8b8b8;"
+        data-controltype="image">
+            <img src="https://codiqa.com/static/images/v2/image.png" alt="image" style="position: absolute; top: 50%; left: 50%; margin-left: -16px; margin-top: -18px">
+        </div> -->
+        <div data-controltype="textblock">
+            <p>
+                <b>
+                    活动规则说明
+                </b>
+            </p>
+            <p>
+                <b>
+                    1. 请在登记页留下您相应的联系方式
+                </b>
+            </p>
+            <p>
+                <b>
+                    2. 进入答题环节（共5题），全部填写完毕后点击提交
+                </b>
+            </p>
+            <p>
+                <b>
+                    3. 5道题答对4道即获得当期的抽奖资格，奖品会随机发放给拥有抽奖资格者
+                </b>
+            </p>
+            <p>
+                <b>
+                    4. 竞赛试题答案请参看“司法指南”—“法律常识”
+                </b>
+            </p>
+            <p>
+                <b>
+                    领奖方式：每期统计结果后，领奖相关信息会以微信或者短信的方式通知
+                </b>
+            </p>
+        </div>
+        <a id="go" href="#page1" class="ui-btn ">
+            进入答题
+        </a>
+    </div>
+</div>
+<div data-role="page" data-control-title="page1" id="page1">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            第一题
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div data-controltype="textblock">
+            <p>
+                <strong id="title1">
+                    题目内容
+                </strong>
+            </p>
+        </div>
+        <div class="ui-field-contain" data-controltype="radiobuttons">
+            <fieldset data-role="controlgroup" data-type="vertical" id="set1">
+                <input id="radio11" name="choice1" value="A" type="radio">
+                <label for="radio11" id="label11">
+                    A.
+                </label>
+                <input id="radio12" name="choice1" value="B" type="radio">
+                <label for="radio12" id="label12">
+                    B.
+                </label>
+                <input id="radio13" name="choice1" value="C" type="radio">
+                <label for="radio13" id="label13">
+                    C.
+                </label>
+                <input id="radio14" name="choice1" value="D" type="radio">
+                <label for="radio14" id="label14">
+                    D.
+                </label>
+            </fieldset>
+        </div>
+    </div>
+    <div data-role="navbar" data-iconpos="top" data-theme="a">
+        <ul>
+            <li>
+                <a id="next1" href="#page2" data-transition="fade" data-theme="" data-icon="arrow-r">
+                    下一题
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="page2" id="page2">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            第二题
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div data-controltype="textblock">
+            <p>
+                <strong id="title2">
+                    题目内容
+                </strong>
+            </p>
+        </div>
+        <div class="ui-field-contain" data-controltype="radiobuttons">
+            <fieldset data-role="controlgroup" data-type="vertical" id="set2">
+                <input id="radio21" name="choice2" value="A" type="radio">
+                <label for="radio21" id="label21">
+                    A.
+                </label>
+                <input id="radio22" name="choice2" value="B" type="radio">
+                <label for="radio22" id="label22">
+                    B.
+                </label>
+                <input id="radio23" name="choice2" value="C" type="radio">
+                <label for="radio23" id="label23">
+                    C.
+                </label>
+                <input id="radio24" name="choice2" value="D" type="radio">
+                <label for="radio24" id="label24">
+                    D.
+                </label>
+            </fieldset>
+        </div>
+    </div>
+    <div data-role="navbar" data-theme="a">
+        <ul>
+            <li>
+                <a id="prev2" href="#page1" data-transition="fade" data-theme="" data-icon="arrow-l">
+                    上一题
+                </a>
+            </li>
+            <li>
+                <a id="next2" href="#page3" data-transition="fade" data-theme="" data-icon="arrow-r">
+                    下一题
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="page3" id="page3">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            第三题
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div data-controltype="textblock">
+            <p>
+                <strong id="title3">
+                    题目内容
+                </strong>
+            </p>
+        </div>
+        <div class="ui-field-contain" data-controltype="radiobuttons">
+            <fieldset data-role="controlgroup" data-type="vertical" id="set3">
+                <input id="radio31" name="choice3" value="A" type="radio">
+                <label for="radio31" id="label31">
+                    A.
+                </label>
+                <input id="radio32" name="choice3" value="B" type="radio">
+                <label for="radio32" id="label32">
+                    B.
+                </label>
+                <input id="radio33" name="choice3" value="C" type="radio">
+                <label for="radio33" id="label33">
+                    C.
+                </label>
+                <input id="radio34" name="choice3" value="D" type="radio">
+                <label for="radio34"  id="label34">
+                    D.
+                </label>
+            </fieldset>
+        </div>
+    </div>
+    <div data-role="navbar" data-iconpos="top" data-theme="a">
+        <ul>
+            <li>
+                <a id="prev3" class="ui-btn" href="#page2" data-transition="fade" data-theme="" data-icon="arrow-l">
+                    上一题
+                </a>
+            </li>
+            <li>
+                <a id="next3" class="ui-btn" href="#page4" data-transition="fade" data-theme="" data-icon="arrow-r">
+                    下一题
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="page4" id="page4">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            第四题
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div data-controltype="textblock">
+            <p>
+                <strong id="title4">
+                    题目内容
+                </strong>
+            </p>
+        </div>
+        <div class="ui-field-contain" data-controltype="radiobuttons">
+            <fieldset data-role="controlgroup" data-type="vertical" id="set4">
+                <input id="radio41" name="choice4" value="A" type="radio">
+                <label for="radio41" id="label41">
+                    A.
+                </label>
+                <input id="radio42" name="choice4" value="B" type="radio">
+                <label for="radio42" id="label42">
+                    B.
+                </label>
+                <input id="radio43" name="choice4" value="C" type="radio">
+                <label for="radio43" id="label43">
+                    C.
+                </label>
+                <input id="radio44" name="choice4" value="D" type="radio">
+                <label for="radio44" id="label44">
+                    D.
+                </label>
+            </fieldset>
+        </div>
+    </div>
+    <div data-role="navbar" data-iconpos="top" data-theme="a">
+        <ul>
+            <li>
+                <a id="prev4" href="#page3" data-transition="fade" data-theme="" data-icon="arrow-l">
+                    上一题
+                </a>
+            </li>
+            <li>
+                <a id="next4" href="#page5" data-transition="fade" data-theme="" data-icon="arrow-r">
+                    下一题
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="page5" id="page5">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            第五题
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div data-controltype="textblock">
+            <p>
+                <strong id="title5">
+                    题目内容
+                </strong>
+            </p>
+        </div>
+        <div class="ui-field-contain" data-controltype="radiobuttons">
+            <fieldset data-role="controlgroup" data-type="vertical" id="set5">
+                <input id="radio51" name="choice5" value="A" type="radio">
+                <label for="radio51" id="label51">
+                    A.
+                </label>
+                <input id="radio52" name="choice5" value="B" type="radio">
+                <label for="radio52" id="label52">
+                    B.
+                </label>
+                <input id="radio53" name="choice5" value="C" type="radio">
+                <label for="radio53" id="label53">
+                    C.
+                </label>
+                <input id="radio54" name="choice5" value="D" type="radio">
+                <label for="radio54" id="label54">
+                    D.
+                </label>
+            </fieldset>
+        </div>
+    </div>
+    <div data-role="navbar" data-iconpos="top" data-theme="a">
+        <ul>
+            <li>
+                <a id="prev5" href="#page4" data-transition="fade" data-theme="" data-icon="arrow-l">
+                    上一题
+                </a>
+            </li>
+            <li>
+                <a id="next5" href="" data-transition="fade" data-theme="" data-icon="arrow-r">
+                    答完
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="结果页" id="page11">
+    <div data-theme="a" data-role="header" data-position="fixed">
+        <h1 class="ui-title">
+            谢谢参与
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <hr style="height:3px; background-color:#ccc; border:0; margin-top:12px; margin-bottom:12px;">
+        <div data-controltype="textblock">
+            <p>
+                <b>
+                    您答对了<span id="result" style="color: red;"></span>道题目，谢谢您的参与！<br/>
+                    <!--<span style="visibility: hidden" id="words">您获得了抽奖资格，最终获奖结果会于海南普法公众号统一发布，并短信通知最终获奖者。</span>-->
+                </b>
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
